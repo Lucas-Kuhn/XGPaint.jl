@@ -10,16 +10,6 @@ using DelimitedFiles
 using Interpolations
 
 
-# write a function that makes szpack_interp (i.e. set_up_szpack_table(file_name)) and pass it to SZpack
-#function setup_szpack_table(file_name)
-#   table = readdlm("/home/lkuhn/CITA-2023/Notes/szpack_interp.dat")
-#   nu_vector = LinRange(log(35.6888844460172*1e9),log(5353.33266690298*1e9),3000)
-#   temp_vector = LinRange(1.0e-3,30.0,100)
-#   szpack_interp = scale(Interpolations.interpolate(table, BSpline(Cubic(Line(OnGrid())))), (temp_vector), (nu_vector))
-#   
-#   return szpack_interp
-
-
 table = readdlm("/home/lkuhn/CITA-2023/Notes/szpack_interp.dat")
 nu_vector = LinRange(log(35.6888844460172*1e9),log(5353.33266690298*1e9),3000)
 temp_vector = LinRange(1.0e-3,30.0,100)
@@ -37,25 +27,18 @@ function SZpack(𝕡, M_200, z, r, τ=0.01)
     
     t = ustrip(uconvert(u"keV",T_e * constants.k_B))
     nu = log(ustrip(uconvert(u"Hz",ω)))
-    #if t > 30
-    ##    t = 30
-    #    println(t)
-    #    println(M_200)
-    #    println(z)
-    #    println(X)
-    #end
-    dI = szpack_interp(t, nu)*u"MJy/sr"
-   
+    
+    dI = uconvert(u"kg*s^-2",szpack_interp(t, nu)*u"MJy/sr")
     y = XGPaint.compton_y_rsz(𝕡, M_200, z, r)
-    I = y * (dI/(τ * θ_e)) * (2π)^4
-    T = I/abs((2 * constants.h^2 * ω^4 * ℯ^X)/(constants.k_B * constants.c_0^2 * T_cmb * (ℯ^X - 1)^2))
+    I = uconvert(u"kg*s^-2",y * (dI/(τ * θ_e)) * (2π)^4)
+    T = I/uconvert(u"kg*s^-2",abs((2 * constants.h^2 * ω^4 * ℯ^X)/(constants.k_B * constants.c_0^2 * T_cmb * (ℯ^X - 1)^2)))
 
     return abs(T)
 end
 
 
 function profile_grid_szp(𝕡::AbstractGNFW{T}; N_z=256, N_logM=256, N_logθ=512, z_min=1e-3, z_max=5.0, 
-              logM_min=11, logM_max=15.7, logθ_min=-16.5, logθ_max=2.5) where T
+              logM_min=11, logM_max=15.1, logθ_min=-16.5, logθ_max=2.5) where T
 
     logθs = LinRange(logθ_min, logθ_max, N_logθ)
     redshifts = LinRange(z_min, z_max, N_z)
